@@ -1,0 +1,51 @@
+# === Java 開發 ===
+*.class
+*.log
+*.war
+*.jar
+*.ear
+
+# === Eclipse ===
+.project
+.classpath
+.settings/
+bin/
+target/
+
+# === IntelliJ IDEA（如果你也用 IntelliJ）===
+.idea/
+*.iml
+out/
+
+# === Maven ===
+target/
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+
+# === Gradle ===
+.gradle/
+build/
+
+# === OS 系統檔 ===
+.DS_Store
+Thumbs.db
+
+# === Spring Boot 設定 ===
+application.properties
+application.yml
+*.db
+
+# === Tomcat、Apache ===
+*.log
+logs/
+work/
+temp/
+
+# === VSCode（如果有用）===
+.vscode/
+
+# === 測試報告 ===
+/test-output/
+/surefire-reports/
+/jacoco.exec
