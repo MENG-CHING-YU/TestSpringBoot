@@ -1,0 +1,32 @@
+spring.application.name=MachineModel
+
+
+spring.web.resources.static-locations=/WEB-INF/resources/,classpath:/static/
+spring.mvc.static-path-pattern=/**
+
+#Setting Restful Filter 
+spring.mvc.hiddenmethod.filter.enabled=true
+
+#SQL Server Setting
+spring.datasource.driver-class-name=com.microsoft.sqlserver.jdbc.SQLServerDriver
+spring.datasource.url=jdbc:sqlserver://localhost:1433;databaseName=jdbcDB;encrypt=false;trustServerCertificate=true
+spring.datasource.username=testuser
+spring.datasource.password=password
+
+#Spring JPA Setting:
+spring.jpa.database-platform=org.hibernate.dialect.SQLServerDialect
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+
+# File Upload Configuration
+spring.servlet.multipart.max-file-size=50MB
+spring.servlet.multipart.max-request-size=100MB
+spring.servlet.multipart.enabled=true
+
+# Logging Configuration
+logging.level.com.machine=DEBUG
+logging.level.org.springframework.web=DEBUG
+logging.level.org.hibernate=INFO
+
+# Custom file upload path
+file.upload.directory=uploads/

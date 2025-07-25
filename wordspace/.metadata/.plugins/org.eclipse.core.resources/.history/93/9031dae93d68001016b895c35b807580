@@ -1,0 +1,288 @@
+package com.machine.Controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import com.machine.Bean.MachinesBean;
+import com.machine.Service.machine.MachinesService;
+
+import jakarta.validation.Valid;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@RestController
+@RequestMapping("/api/machines")
+@CrossOrigin(origins = "*")
+public class MachineController {
+
+    @Autowired
+    private MachinesService machinesService;
+
+    // 查詢所有機台
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<MachinesBean>>> getAllMachines(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String statusFilter) {
+        try {
+            List<MachinesBean> machines = machinesService.findAllMachines();
+
+            // 處理搜尋和篩選
+            if (search != null && !search.trim().isEmpty()) {
+                String keyword = search.trim().toLowerCase();
+                machines = machines.stream()
+                        .filter(m -> m.getMachineName().toLowerCase().contains(keyword) ||
+                                m.getSerialNumber().toLowerCase().contains(keyword) ||
+                                String.valueOf(m.getMachineId()).contains(keyword))
+                        .collect(Collectors.toList());
+            }
+
+            if (statusFilter != null && !statusFilter.trim().isEmpty()) {
+                machines = machines.stream()
+                        .filter(m -> m.getMstatus().equals(statusFilter))
+                        .collect(Collectors.toList());
+            }
+
+            return ResponseEntity.ok(ApiResponse.success(machines, "查詢成功"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("查詢機台資料失敗：" + e.getMessage()));
+        }
+    }
+
+    // 根據ID查詢機台
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<MachinesBean>> getMachineById(@PathVariable int id) {
+        try {
+            MachinesBean machine = machinesService.findMachineById(id);
+            if (machine == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.error("找不到該機台資料"));
+            }
+            return ResponseEntity.ok(ApiResponse.success(machine, "查詢成功"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("查詢機台資料失敗：" + e.getMessage()));
+        }
+    }
+
+    // 新增機台
+    @PostMapping
+    public ResponseEntity<ApiResponse<String>> createMachine(@Valid @RequestBody MachineCreateRequest request) {
+        try {
+            MachinesBean machine = new MachinesBean(
+                    request.getMachineName(),
+                    request.getSerialNumber(),
+                    request.getMstatus(),
+                    request.getMachineLocation());
+
+            machinesService.insertMachine(machine);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(ApiResponse.success(null, "機台新增成功"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("新增機台失敗：" + e.getMessage()));
+        }
+    }
+
+    // 更新機台
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<String>> updateMachine(
+            @PathVariable int id,
+            @Valid @RequestBody MachineUpdateRequest request) {
+        try {
+            MachinesBean machine = new MachinesBean(
+                    id,
+                    request.getMachineName(),
+                    request.getSerialNumber(),
+                    request.getMstatus(),
+                    request.getMachineLocation());
+
+            machinesService.updateMachine(machine);
+            return ResponseEntity.ok(ApiResponse.success(null, "機台更新成功"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("更新機台失敗：" + e.getMessage()));
+        }
+    }
+
+    // 刪除機台
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<String>> deleteMachine(@PathVariable int id) {
+        try {
+            machinesService.deleteMachine(id);
+            return ResponseEntity.ok(ApiResponse.success(null, "機台刪除成功"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("刪除機台失敗：" + e.getMessage()));
+        }
+    }
+
+    // 根據狀態查詢機台
+    @GetMapping("/status/{status}")
+    public ResponseEntity<ApiResponse<List<MachinesBean>>> getMachinesByStatus(@PathVariable String status) {
+        try {
+            List<MachinesBean> machines = machinesService.findMachinesByStatus(status);
+            return ResponseEntity.ok(ApiResponse.success(machines, "查詢成功"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("查詢機台資料失敗：" + e.getMessage()));
+        }
+    }
+
+    // 根據出廠編號查詢機台
+    @GetMapping("/serial/{serialNumber}")
+    public ResponseEntity<ApiResponse<MachinesBean>> getMachineBySerialNumber(@PathVariable String serialNumber) {
+        try {
+            MachinesBean machine = machinesService.findMachineBySerialNumber(serialNumber);
+            if (machine == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.error("找不到該出廠編號的機台"));
+            }
+            return ResponseEntity.ok(ApiResponse.success(machine, "查詢成功"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("查詢機台資料失敗：" + e.getMessage()));
+        }
+    }
+
+    // 搜尋機台
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<List<MachinesBean>>> searchMachines(@RequestParam String keyword) {
+        try {
+            List<MachinesBean> machines = machinesService.searchMachines(keyword);
+            return ResponseEntity.ok(ApiResponse.success(machines, "搜尋成功"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("搜尋機台失敗：" + e.getMessage()));
+        }
+    }
+
+    // DTO Classes
+    public static class MachineCreateRequest {
+        private String machineName;
+        private String serialNumber;
+        private String mstatus;
+        private String machineLocation;
+
+        // Getters and Setters
+        public String getMachineName() {
+            return machineName;
+        }
+
+        public void setMachineName(String machineName) {
+            this.machineName = machineName;
+        }
+
+        public String getSerialNumber() {
+            return serialNumber;
+        }
+
+        public void setSerialNumber(String serialNumber) {
+            this.serialNumber = serialNumber;
+        }
+
+        public String getMstatus() {
+            return mstatus;
+        }
+
+        public void setMstatus(String mstatus) {
+            this.mstatus = mstatus;
+        }
+
+        public String getMachineLocation() {
+            return machineLocation;
+        }
+
+        public void setMachineLocation(String machineLocation) {
+            this.machineLocation = machineLocation;
+        }
+    }
+
+    public static class MachineUpdateRequest {
+        private String machineName;
+        private String serialNumber;
+        private String mstatus;
+        private String machineLocation;
+
+        // Getters and Setters
+        public String getMachineName() {
+            return machineName;
+        }
+
+        public void setMachineName(String machineName) {
+            this.machineName = machineName;
+        }
+
+        public String getSerialNumber() {
+            return serialNumber;
+        }
+
+        public void setSerialNumber(String serialNumber) {
+            this.serialNumber = serialNumber;
+        }
+
+        public String getMstatus() {
+            return mstatus;
+        }
+
+        public void setMstatus(String mstatus) {
+            this.mstatus = mstatus;
+        }
+
+        public String getMachineLocation() {
+            return machineLocation;
+        }
+
+        public void setMachineLocation(String machineLocation) {
+            this.machineLocation = machineLocation;
+        }
+    }
+
+    // 統一回應格式
+    public static class ApiResponse<T> {
+        private boolean success;
+        private String message;
+        private T data;
+
+        private ApiResponse(boolean success, String message, T data) {
+            this.success = success;
+            this.message = message;
+            this.data = data;
+        }
+
+        public static <T> ApiResponse<T> success(T data, String message) {
+            return new ApiResponse<>(true, message, data);
+        }
+
+        public static <T> ApiResponse<T> error(String message) {
+            return new ApiResponse<>(false, message, null);
+        }
+
+        // Getters
+        public boolean isSuccess() {
+            return success;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+
+        public T getData() {
+            return data;
+        }
+    }
+}
